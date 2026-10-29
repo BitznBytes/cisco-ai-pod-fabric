@@ -1,0 +1,104 @@
+---
+# FEN - Front-End Network (VXLAN EVPN)
+# 2 spines + 8 leaf switches
+# Leaf naming reflects functional grouping within the fabric:
+#   fe-sw-l-01/02       — general-purpose compute leaves
+#   fe-sto-sw-l-01/02   — storage-dedicated leaves
+#   fe-sky-sw-l-01/02   — Skyline/cloud-facing leaves
+#   fe-priv-sw-l-01/02  — private/privileged-segment leaves
+# Management: 192.0.2.0/24 (PLACEHOLDER — replace with your OOB management subnet)
+#
+# PLACEHOLDER values: replace serial_number with actual switch serial numbers,
+# and management_ipv4_address / default_gateway_v4 with your real OOB management IPs.
+vxlan:
+  topology:
+    switches:
+      - name: fe-sw-s-01
+        serial_number: SERIAL-FEN-SPINE-01    # PLACEHOLDER
+        role: spine
+        management:
+          default_gateway_v4: 192.0.2.1       # PLACEHOLDER
+          management_ipv4_address: 192.0.2.201 # PLACEHOLDER
+        routing_loopback_id: 0
+        vtep_loopback_id: 1
+
+      - name: fe-sw-s-02
+        serial_number: SERIAL-FEN-SPINE-02    # PLACEHOLDER
+        role: spine
+        management:
+          default_gateway_v4: 192.0.2.1       # PLACEHOLDER
+          management_ipv4_address: 192.0.2.202 # PLACEHOLDER
+        routing_loopback_id: 0
+        vtep_loopback_id: 1
+
+      - name: fe-sw-l-01
+        serial_number: SERIAL-FEN-LEAF-01     # PLACEHOLDER
+        role: leaf
+        management:
+          default_gateway_v4: 192.0.2.1       # PLACEHOLDER
+          management_ipv4_address: 192.0.2.203 # PLACEHOLDER
+        routing_loopback_id: 0
+        vtep_loopback_id: 1
+
+      - name: fe-sw-l-02
+        serial_number: SERIAL-FEN-LEAF-02     # PLACEHOLDER
+        role: leaf
+        management:
+          default_gateway_v4: 192.0.2.1       # PLACEHOLDER
+          management_ipv4_address: 192.0.2.204 # PLACEHOLDER
+        routing_loopback_id: 0
+        vtep_loopback_id: 1
+
+      - name: fe-sto-sw-l-01
+        serial_number: SERIAL-FEN-LEAF-03     # PLACEHOLDER
+        role: leaf
+        management:
+          default_gateway_v4: 192.0.2.1       # PLACEHOLDER
+          management_ipv4_address: 192.0.2.205 # PLACEHOLDER
+        routing_loopback_id: 0
+        vtep_loopback_id: 1
+
+      - name: fe-sto-sw-l-02
+        serial_number: SERIAL-FEN-LEAF-04     # PLACEHOLDER
+        role: leaf
+        management:
+          default_gateway_v4: 192.0.2.1       # PLACEHOLDER
+          management_ipv4_address: 192.0.2.206 # PLACEHOLDER
+        routing_loopback_id: 0
+        vtep_loopback_id: 1
+
+      - name: fe-sky-sw-l-01
+        serial_number: SERIAL-FEN-LEAF-05     # PLACEHOLDER
+        role: leaf
+        management:
+          default_gateway_v4: 192.0.2.1       # PLACEHOLDER
+          management_ipv4_address: 192.0.2.207 # PLACEHOLDER
+        routing_loopback_id: 0
+        vtep_loopback_id: 1
+
+      - name: fe-sky-sw-l-02
+        serial_number: SERIAL-FEN-LEAF-06     # PLACEHOLDER
+        role: leaf
+        management:
+          default_gateway_v4: 192.0.2.1       # PLACEHOLDER
+          management_ipv4_address: 192.0.2.208 # PLACEHOLDER
+        routing_loopback_id: 0
+        vtep_loopback_id: 1
+
+      - name: fe-priv-sw-l-01
+        serial_number: SERIAL-FEN-LEAF-07     # PLACEHOLDER
+        role: leaf
+        management:
+          default_gateway_v4: 192.0.2.1       # PLACEHOLDER
+          management_ipv4_address: 192.0.2.209 # PLACEHOLDER
+        routing_loopback_id: 0
+        vtep_loopback_id: 1
+
+      - name: fe-priv-sw-l-02
+        serial_number: SERIAL-FEN-LEAF-08     # PLACEHOLDER
+        role: leaf
+        management:
+          default_gateway_v4: 192.0.2.1       # PLACEHOLDER
+          management_ipv4_address: 192.0.2.210 # PLACEHOLDER
+        routing_loopback_id: 0
+        vtep_loopback_id: 1

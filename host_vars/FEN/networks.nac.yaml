@@ -1,0 +1,88 @@
+---
+# FEN network (VLAN/VNI) definitions
+# Derived from Cisco AI Pod CVD (VAST Data edition).
+# IP addresses marked PLACEHOLDER — replace with site-specific values before deploy.
+# net_id follows CVD convention: 30000 + VLAN_ID
+# mtu_l3intf: 9216 on all L3 networks — jumbo frames required for NFS/storage workloads.
+vxlan:
+  overlay:
+    networks:
+      # -------------------------------------------------------------------
+      # In-band / compute management (L3)
+      # Attached to: compute leaves + private leaves
+      # Hosts: GPU servers, UCS nodes — in-band management and user access
+      # -------------------------------------------------------------------
+      - name: FEN-IB-MGMT
+        vrf_name: FEN-MGMT
+        vlan_id: 703
+        net_id: 30703
+        gw_ip_address: "198.51.100.126/26"  # PLACEHOLDER — replace with your in-band management gateway
+        mtu_l3intf: 9216
+        arp_suppress: true
+
+      # -------------------------------------------------------------------
+      # NFS storage (L3)
+      # Attached to: compute leaves + storage leaves (both sides of the NFS path)
+      # Hosts: GPU servers (clients) <-> VAST EBox (server)
+      # -------------------------------------------------------------------
+      - name: FEN-NFS
+        vrf_name: FEN-MGMT
+        vlan_id: 3051
+        net_id: 33051
+        gw_ip_address: "192.168.51.1/24"    # PLACEHOLDER — CVD value
+        mtu_l3intf: 9216
+        arp_suppress: true
+
+      # -------------------------------------------------------------------
+      # VAST client/external network (L2 only)
+      # Attached to: storage leaves only
+      # VAST EBox external/client-facing network
+      # -------------------------------------------------------------------
+      - name: FEN-VAST-Client
+        vrf_name: FEN-MGMT
+        vlan_id: 3056
+        net_id: 33056
+        is_l2_only: true
+
+      # -------------------------------------------------------------------
+      # VAST internal storage / southbound network (L2 only)
+      # Attached to: storage leaves only
+      # VAST EBox internal replication / southbound fabric
+      # -------------------------------------------------------------------
+      - name: FEN-VAST-Storage
+        vlan_id: 69
+        net_id: 30069
+        is_l2_only: true
+
+      # -------------------------------------------------------------------
+      # VAST node discovery (L2 only)
+      # Attached to: storage leaves only
+      # VAST automatic node discovery (native VLAN on storage ports)
+      # -------------------------------------------------------------------
+      - name: FEN-VAST-Discovery
+        vlan_id: 10
+        net_id: 30010
+        is_l2_only: true
+
+    network_attach_groups:
+      # Compute and private leaves: management + NFS path (client side)
+      - name: fen-compute-leaves
+        networks:
+          - name: FEN-IB-MGMT
+          - name: FEN-NFS
+        switches:
+          - name: fe-sw-l-01
+          - name: fe-sw-l-02
+          - name: fe-priv-sw-l-01
+          - name: fe-priv-sw-l-02
+
+      # Storage leaves: NFS path (server side) + all VAST networks
+      - name: fen-storage-leaves
+        networks:
+          - name: FEN-NFS
+          - name: FEN-VAST-Client
+          - name: FEN-VAST-Storage
+          - name: FEN-VAST-Discovery
+        switches:
+          - name: fe-sto-sw-l-01
+          - name: fe-sto-sw-l-02

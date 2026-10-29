@@ -1,0 +1,28 @@
+---
+# CUSTOMIZE: Main VXLAN Deployment Playbook
+# This is the main entry point for deploying VXLAN fabric configuration to NDFC.
+# Update the hosts value to match your fabric host(s) from inventory.yaml
+
+- name: Manage VXLAN Fabric Configuration
+  hosts: ndfc
+  any_errors_fatal: true
+  gather_facts: no
+  serial: 1
+
+  roles:
+    # The validate role is run automatically as a prerequisite to create, deploy, and remove roles
+    # Uncomment to run validation explicitly:
+    # - role: cisco.nac_dc_vxlan.validate
+
+    # Create role - prepares configuration objects in NDFC
+    - role: cisco.nac_dc_vxlan.dtc.create
+      tags: 'role_create'
+
+    # Deploy role - pushes configuration to network devices
+    - role: cisco.nac_dc_vxlan.dtc.deploy
+      tags: 'role_deploy'
+
+    # Remove role - removes configuration objects (use with caution!)
+    # Uncomment only when you need to remove fabric configuration
+    # - role: cisco.nac_dc_vxlan.dtc.remove
+    #   tags: 'role_remove'

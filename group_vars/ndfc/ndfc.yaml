@@ -1,0 +1,37 @@
+---
+# CUSTOMIZE: NDFC Role Behavior Settings
+# These variables control how the NaC DC VXLAN Ansible roles behave.
+# Adjust based on your deployment requirements.
+
+# Variable                            Description                                                                           Default
+# force_run_all                       Force all roles in the collection to run                                              true
+# interface_delete_mode               Remove interface state as part of the remove role                                     true
+# inventory_delete_mode               Remove inventory state as part of the remove role                                     true
+# link_vpc_delete_mode                Remove vpc link state as part of the remove role                                      true
+# multisite_child_fabric_delete_mode  Remove child fabric from MSD/MFD fabric as part of the remove role                    true
+# multisite_network_delete_mode       Remove network state as part of the remove role for multisite (MSD and MFD) fabrics   true
+# multisite_vrf_delete_mode           Remove vrf state as part of the remove role for multisite (MSD and MFD) fabrics       true
+# network_delete_mode                 Remove network state as part of the remove role                                       true
+# policy_delete_mode                  Remove policy state as part of the remove role                                        true
+# vrf_delete_mode                     Remove vrf state as part of the remove role                                           true
+# vpc_delete_mode                     Remove vpc pair state as part of the remove role                                      true
+# tor_pairing_delete_mode             Remove TOR pairing state as part of the remove role                                   true
+
+# CUSTOMIZE: Set to false to enable differential/incremental runs
+# When true, all configuration will be pushed regardless of current state
+force_run_all: true
+
+# CUSTOMIZE: Remove role behavior settings
+# These control what gets deleted when using the remove role
+# Set to false to preserve specific configuration types during removal
+interface_delete_mode: true
+inventory_delete_mode: true
+link_vpc_delete_mode: true
+multisite_child_fabric_delete_mode: true
+multisite_network_delete_mode: true
+multisite_vrf_delete_mode: true
+network_delete_mode: true
+policy_delete_mode: true
+vrf_delete_mode: true
+vpc_delete_mode: true
+tor_pairing_delete_mode: true

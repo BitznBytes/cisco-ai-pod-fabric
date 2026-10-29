@@ -1,0 +1,384 @@
+---
+# FEN host-facing interface configurations
+# All commented-out examples below are templates — uncomment and populate
+# port names, VLANs, and descriptions once physical cabling is confirmed.
+#
+# MTU: 9216 (jumbo) on all interfaces — required for NFS/storage and AI workloads.
+# Speed: set explicitly to match the installed optics/cables.
+#
+# Interface naming on Nexus 9000:  Ethernet1/1, Ethernet1/2 ...
+# Port-channel naming:             port-channel10, port-channel20 ...
+# vPC ID:                          must match on both vPC peer switches for the same host
+#
+# vPC PEER LINK port-channels are defined under each switch with mode: vpc_peer_link
+# and are referenced by the vpc_peers section.
+
+vxlan:
+  topology:
+
+    # =========================================================================
+    # vPC PEER PAIRS
+    # Define which switches form vPC pairs. NDFC will configure the vPC domain,
+    # keepalive, and peer-link automatically once the port-channels below are
+    # defined on each switch with mode: vpc_peer_link.
+    # =========================================================================
+    # vpc_peers:
+    #   - peer1: fe-sw-l-01
+    #     peer2: fe-sw-l-02
+    #
+    #   - peer1: fe-sto-sw-l-01
+    #     peer2: fe-sto-sw-l-02
+    #
+    #   - peer1: fe-sky-sw-l-01
+    #     peer2: fe-sky-sw-l-02
+    #
+    #   - peer1: fe-priv-sw-l-01
+    #     peer2: fe-priv-sw-l-02
+
+    switches:
+
+      # =======================================================================
+      # COMPUTE LEAF PAIR — fe-sw-l-01 / fe-sw-l-02
+      # Hosts: GPU servers, UCS compute nodes
+      # Traffic: In-band management (VLAN 703), NFS (VLAN 3051)
+      # =======================================================================
+
+      - name: fe-sw-l-01
+        interfaces:
+
+          # --- vPC peer link (inter-switch link to fe-sw-l-02) ---------------
+          # Uncomment and set member ports to the physical uplinks between the
+          # two compute leaves. NDFC will push the full vPC peer-link config.
+          #
+          # - name: port-channel500
+          #   mode: vpc_peer_link
+          #   mtu: 9216
+          #   description: "vPC peer-link to fe-sw-l-02"
+          #   members:
+          #     - Ethernet1/49
+          #     - Ethernet1/50
+
+          # --- Single-NIC access port (management VLAN only) -----------------
+          # Use for hosts with one NIC port connected to a single leaf.
+          # Enable portfast + BPDU guard on all host-facing ports.
+          #
+          # - name: Ethernet1/1
+          #   mode: access
+          #   description: "gpu-server-01 MGMT"
+          #   access_vlan: 703
+          #   mtu: 9216
+          #   speed: 200gb
+          #   spanning_tree_portfast: true
+          #   enable_bpdu_guard: true
+
+          # --- Single-NIC trunk port (management + NFS on same NIC) ----------
+          # Use for hosts with one NIC carrying multiple VLANs.
+          #
+          # - name: Ethernet1/2
+          #   mode: trunk
+          #   description: "gpu-server-01 DATA trunk"
+          #   native_vlan: 2
+          #   trunk_allowed_vlans:
+          #     - from: 703
+          #       to: 703
+          #     - from: 3051
+          #       to: 3051
+          #   mtu: 9216
+          #   speed: 200gb
+          #   spanning_tree_portfast: true
+          #   enable_bpdu_guard: true
+
+          # --- vPC access port-channel (dual-NIC, single VLAN) ---------------
+          # Use for hosts with two NICs bonded via LACP across both leaves.
+          # vpc_id must match on fe-sw-l-02 for the same host.
+          #
+          # - name: port-channel10
+          #   mode: access
+          #   description: "gpu-server-01 MGMT vPC bond"
+          #   vpc_id: 10
+          #   access_vlan: 703
+          #   mtu: 9216
+          #   speed: 200gb
+          #   pc_mode: active
+          #   members:
+          #     - Ethernet1/3
+          #   spanning_tree_portfast: true
+          #   enable_bpdu_guard: true
+          #   enable_lacp_vpc_convergence: true
+
+          # --- vPC trunk port-channel (dual-NIC, multiple VLANs) -------------
+          # Use for hosts with two NICs bonded via LACP carrying tagged traffic.
+          # vpc_id must match on fe-sw-l-02 for the same host.
+          #
+          # - name: port-channel20
+          #   mode: trunk
+          #   description: "gpu-server-01 DATA vPC trunk"
+          #   vpc_id: 20
+          #   native_vlan: 2
+          #   trunk_allowed_vlans:
+          #     - from: 703
+          #       to: 703
+          #     - from: 3051
+          #       to: 3051
+          #   mtu: 9216
+          #   speed: 200gb
+          #   pc_mode: active
+          #   members:
+          #     - Ethernet1/4
+          #   spanning_tree_portfast: true
+          #   enable_bpdu_guard: true
+          #   enable_lacp_vpc_convergence: true
+
+      - name: fe-sw-l-02
+        interfaces:
+
+          # --- vPC peer link (inter-switch link to fe-sw-l-01) ---------------
+          # - name: port-channel500
+          #   mode: vpc_peer_link
+          #   mtu: 9216
+          #   description: "vPC peer-link to fe-sw-l-01"
+          #   members:
+          #     - Ethernet1/49
+          #     - Ethernet1/50
+
+          # --- vPC access port-channel (second leg — same vpc_id as fe-sw-l-01)
+          # - name: port-channel10
+          #   mode: access
+          #   description: "gpu-server-01 MGMT vPC bond"
+          #   vpc_id: 10
+          #   access_vlan: 703
+          #   mtu: 9216
+          #   speed: 200gb
+          #   pc_mode: active
+          #   members:
+          #     - Ethernet1/3
+          #   spanning_tree_portfast: true
+          #   enable_bpdu_guard: true
+          #   enable_lacp_vpc_convergence: true
+
+          # --- vPC trunk port-channel (second leg — same vpc_id as fe-sw-l-01)
+          # - name: port-channel20
+          #   mode: trunk
+          #   description: "gpu-server-01 DATA vPC trunk"
+          #   vpc_id: 20
+          #   native_vlan: 2
+          #   trunk_allowed_vlans:
+          #     - from: 703
+          #       to: 703
+          #     - from: 3051
+          #       to: 3051
+          #   mtu: 9216
+          #   speed: 200gb
+          #   pc_mode: active
+          #   members:
+          #     - Ethernet1/4
+          #   spanning_tree_portfast: true
+          #   enable_bpdu_guard: true
+          #   enable_lacp_vpc_convergence: true
+
+      # =======================================================================
+      # STORAGE LEAF PAIR — fe-sto-sw-l-01 / fe-sto-sw-l-02
+      # Hosts: VAST EBox storage nodes
+      # Traffic: NFS (3051), VAST Client (3056), VAST Storage (69), Discovery (10)
+      # CVD: 400GbE breakout to 2×200G per VAST EBox port
+      # =======================================================================
+
+      - name: fe-sto-sw-l-01
+        interfaces:
+
+          # --- vPC peer link (inter-switch link to fe-sto-sw-l-02) -----------
+          # - name: port-channel500
+          #   mode: vpc_peer_link
+          #   mtu: 9216
+          #   description: "vPC peer-link to fe-sto-sw-l-02"
+          #   members:
+          #     - Ethernet1/49
+          #     - Ethernet1/50
+
+          # --- VAST internal storage (L2, access, VLAN 69) -------------------
+          # CVD: ports 1/9–1/14 broken out 400G → 2×200G for VAST southbound
+          #
+          # - name: Ethernet1/9/1
+          #   mode: access
+          #   description: "VAST-EBox-1 internal storage"
+          #   access_vlan: 69
+          #   mtu: 9216
+          #   speed: 200gb
+          #   spanning_tree_portfast: true
+          #   enable_bpdu_guard: true
+
+          # --- VAST client/external network (L2, trunk, VLANs 3051+3056) ----
+          # CVD: ports 1/15–1/20 broken out 400G → 2×200G for VAST northbound
+          #
+          # - name: Ethernet1/15/1
+          #   mode: trunk
+          #   description: "VAST-EBox-1 client network"
+          #   native_vlan: 2
+          #   trunk_allowed_vlans:
+          #     - from: 3051
+          #       to: 3051
+          #     - from: 3056
+          #       to: 3056
+          #   mtu: 9216
+          #   speed: 200gb
+          #   spanning_tree_portfast: true
+          #   enable_bpdu_guard: true
+
+          # --- VAST vPC trunk port-channel (dual-homed to both storage leaves)
+          # - name: port-channel10
+          #   mode: trunk
+          #   description: "VAST-EBox-1 vPC trunk"
+          #   vpc_id: 10
+          #   native_vlan: 2
+          #   trunk_allowed_vlans:
+          #     - from: 69
+          #       to: 69
+          #     - from: 3051
+          #       to: 3051
+          #     - from: 3056
+          #       to: 3056
+          #   mtu: 9216
+          #   speed: 200gb
+          #   pc_mode: active
+          #   members:
+          #     - Ethernet1/15/1
+          #   spanning_tree_portfast: true
+          #   enable_bpdu_guard: true
+          #   enable_lacp_vpc_convergence: true
+
+      - name: fe-sto-sw-l-02
+        interfaces:
+
+          # --- vPC peer link (inter-switch link to fe-sto-sw-l-01) -----------
+          # - name: port-channel500
+          #   mode: vpc_peer_link
+          #   mtu: 9216
+          #   description: "vPC peer-link to fe-sto-sw-l-01"
+          #   members:
+          #     - Ethernet1/49
+          #     - Ethernet1/50
+
+          # --- VAST vPC trunk port-channel (second leg, same vpc_id) ---------
+          # - name: port-channel10
+          #   mode: trunk
+          #   description: "VAST-EBox-1 vPC trunk"
+          #   vpc_id: 10
+          #   native_vlan: 2
+          #   trunk_allowed_vlans:
+          #     - from: 69
+          #       to: 69
+          #     - from: 3051
+          #       to: 3051
+          #     - from: 3056
+          #       to: 3056
+          #   mtu: 9216
+          #   speed: 200gb
+          #   pc_mode: active
+          #   members:
+          #     - Ethernet1/15/1
+          #   spanning_tree_portfast: true
+          #   enable_bpdu_guard: true
+          #   enable_lacp_vpc_convergence: true
+
+      # =======================================================================
+      # SKY LEAF PAIR — fe-sky-sw-l-01 / fe-sky-sw-l-02
+      # Hosts: NVIDIA Skyway InfiniBand gateway nodes
+      # Traffic: TBD — IB gateway Ethernet-side VLAN to be defined
+      # =======================================================================
+
+      - name: fe-sky-sw-l-01
+        interfaces:
+
+          # --- vPC peer link --------------------------------------------------
+          # - name: port-channel500
+          #   mode: vpc_peer_link
+          #   mtu: 9216
+          #   description: "vPC peer-link to fe-sky-sw-l-02"
+          #   members:
+          #     - Ethernet1/49
+          #     - Ethernet1/50
+
+          # --- Skyway IB gateway (VLAN TBD) ----------------------------------
+          # NVIDIA Skyway gateways bridge Ethernet fabric to InfiniBand.
+          # VLAN ID and port speed TBD once IB gateway design is confirmed.
+          #
+          # - name: port-channel10
+          #   mode: trunk
+          #   description: "Skyway-GW-1 vPC trunk"
+          #   vpc_id: 10
+          #   native_vlan: 2
+          #   trunk_allowed_vlans:
+          #     - from: 700        # PLACEHOLDER — update with IB gateway VLAN
+          #       to: 700
+          #   mtu: 9216
+          #   speed: 400gb
+          #   pc_mode: active
+          #   members:
+          #     - Ethernet1/1
+          #   spanning_tree_portfast: true
+          #   enable_bpdu_guard: true
+          #   enable_lacp_vpc_convergence: true
+
+      - name: fe-sky-sw-l-02
+        interfaces:
+
+          # --- vPC peer link --------------------------------------------------
+          # - name: port-channel500
+          #   mode: vpc_peer_link
+          #   mtu: 9216
+          #   description: "vPC peer-link to fe-sky-sw-l-01"
+          #   members:
+          #     - Ethernet1/49
+          #     - Ethernet1/50
+
+          # --- Skyway IB gateway vPC trunk (second leg) ----------------------
+          # - name: port-channel10
+          #   mode: trunk
+          #   description: "Skyway-GW-1 vPC trunk"
+          #   vpc_id: 10
+          #   native_vlan: 2
+          #   trunk_allowed_vlans:
+          #     - from: 700        # PLACEHOLDER — update with IB gateway VLAN
+          #       to: 700
+          #   mtu: 9216
+          #   speed: 400gb
+          #   pc_mode: active
+          #   members:
+          #     - Ethernet1/1
+          #   spanning_tree_portfast: true
+          #   enable_bpdu_guard: true
+          #   enable_lacp_vpc_convergence: true
+
+      # =======================================================================
+      # PRIVATE LEAF PAIR — fe-priv-sw-l-01 / fe-priv-sw-l-02
+      # Role TBD — configured as general-purpose compute for now.
+      # Same interface patterns as compute leaves apply.
+      # =======================================================================
+
+      - name: fe-priv-sw-l-01
+        interfaces:
+
+          # --- vPC peer link --------------------------------------------------
+          # - name: port-channel500
+          #   mode: vpc_peer_link
+          #   mtu: 9216
+          #   description: "vPC peer-link to fe-priv-sw-l-02"
+          #   members:
+          #     - Ethernet1/49
+          #     - Ethernet1/50
+
+          # See compute leaf examples above — same access/trunk/vPC patterns apply.
+
+      - name: fe-priv-sw-l-02
+        interfaces:
+
+          # --- vPC peer link --------------------------------------------------
+          # - name: port-channel500
+          #   mode: vpc_peer_link
+          #   mtu: 9216
+          #   description: "vPC peer-link to fe-priv-sw-l-01"
+          #   members:
+          #     - Ethernet1/49
+          #     - Ethernet1/50
+
+          # See compute leaf examples above — same access/trunk/vPC patterns apply.

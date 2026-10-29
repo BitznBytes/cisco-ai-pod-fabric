@@ -1,0 +1,98 @@
+---
+# BEN - Back-End Network (AI/GPU Routed Fabric)
+# Template: Easy_Fabric_eBGP with ENABLE_EVPN=false
+#   - Pure L3 eBGP routed fabric, no VXLAN overlay
+#   - Multi-AS eBGP between spines and leaves (each leaf gets its own ASN via bgpAsnAutoAllocation)
+#   - AI/ML QoS policy pre-configures PFC/ECN/DCQCN for RoCEv2 lossless queues
+#
+# Provisioned via: scripts/ndfc_provision_fabrics.py (not included — implement for your environment)
+# NOT in inventory.yaml — not managed by the cisco.nac_dc_vxlan collection.
+#
+# PLACEHOLDER values: replace serial_number with actual switch serial numbers,
+# and management_ipv4_address / default_gateway_v4 with your real OOB management IPs.
+
+fabric:
+  name: BEN
+  template: Easy_Fabric_eBGP
+
+  nvPairs:
+    # BGP
+    BGP_AS: "65201"
+    BGP_AS_MODE: "Multi-AS"           # each leaf auto-assigned a unique ASN
+    BGP_MAX_PATH: "64"                # ECMP across all paths — critical for GPU traffic distribution
+    bgpAsnAutoAllocation: "true"
+    bgpAsnRange: "1001-2000"          # leaf ASN pool
+
+    # AI/ML QoS — this single flag enables PFC, ECN, DCQCN, lossless queuing for RoCEv2
+    ENABLE_AI_ML_QOS_POLICY: "true"
+    ENABLE_AI_ML_QOS_POLICY_FLAP: "true"
+    AI_ML_QOS_POLICY: "AI_Fabric_QOS_400G"
+    AI_QOS_400G_MIN_BW: "950"
+
+    # Overlay — disabled; pure routed fabric
+    ENABLE_EVPN: "false"
+
+    # Underlay routing
+    LINK_STATE_ROUTING: "ebgp"
+    LINK_STATE_ROUTING_TAG: "UNDERLAY"
+    FABRIC_INTERFACE_TYPE: "p2p"
+    defaultLeafIntfType: "routed"
+
+    # IP ranges (BEN-specific, non-overlapping with FEN)
+    LOOPBACK0_IP_RANGE: "10.2.0.0/22"
+    SUBNET_RANGE: "10.102.0.0/16"
+    SUBNET_TARGET_MASK: "31"
+
+    # MTU — jumbo frames for GPU workloads
+    FABRIC_MTU: "9216"
+    L2_HOST_INTF_MTU: "9216"
+
+    # Misc
+    COPP_POLICY: "strict"
+    ENABLE_NXAPI: "true"
+    ENABLE_NXAPI_HTTP: "true"
+
+# Switch inventory for ndfc_provision_fabrics.py discovery.
+# Management network: PLACEHOLDER — replace with your OOB management subnet
+switches:
+  - name: gpu-sw-s-01
+    serial_number: SERIAL-BEN-SPINE-01    # PLACEHOLDER
+    role: spine
+    management:
+      default_gateway_v4: 192.0.2.1       # PLACEHOLDER
+      management_ipv4_address: 192.0.2.211 # PLACEHOLDER
+
+  - name: gpu-sw-s-02
+    serial_number: SERIAL-BEN-SPINE-02    # PLACEHOLDER
+    role: spine
+    management:
+      default_gateway_v4: 192.0.2.1       # PLACEHOLDER
+      management_ipv4_address: 192.0.2.212 # PLACEHOLDER
+
+  - name: gpu-sw-l-01
+    serial_number: SERIAL-BEN-LEAF-01     # PLACEHOLDER
+    role: leaf
+    management:
+      default_gateway_v4: 192.0.2.1       # PLACEHOLDER
+      management_ipv4_address: 192.0.2.213 # PLACEHOLDER
+
+  - name: gpu-sw-l-02
+    serial_number: SERIAL-BEN-LEAF-02     # PLACEHOLDER
+    role: leaf
+    management:
+      default_gateway_v4: 192.0.2.1       # PLACEHOLDER
+      management_ipv4_address: 192.0.2.214 # PLACEHOLDER
+
+  - name: gpu-sw-l-03
+    serial_number: SERIAL-BEN-LEAF-03     # PLACEHOLDER
+    role: leaf
+    management:
+      default_gateway_v4: 192.0.2.1       # PLACEHOLDER
+      management_ipv4_address: 192.0.2.215 # PLACEHOLDER
+
+  - name: gpu-sw-l-04
+    serial_number: SERIAL-BEN-LEAF-04     # PLACEHOLDER
+    role: leaf
+    management:
+      default_gateway_v4: 192.0.2.1       # PLACEHOLDER
+      management_ipv4_address: 192.0.2.216 # PLACEHOLDER

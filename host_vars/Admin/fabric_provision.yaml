@@ -1,0 +1,49 @@
+---
+# Admin - Out-of-Band Management Classic LAN Fabric
+# Template: Easy_Fabric_Classic
+#   - VLAN-based L2/L3 fabric, no VXLAN overlay
+#   - Used for out-of-band management, bastion access, tooling
+#
+# Provisioned via: scripts/ndfc_provision_fabrics.py (not included — implement for your environment)
+# NOT in inventory.yaml — not managed by the cisco.nac_dc_vxlan collection.
+#
+# PLACEHOLDER values: replace serial_number with actual switch serial numbers,
+# and management_ipv4_address / default_gateway_v4 with your real OOB management IPs.
+
+fabric:
+  name: Admin
+  template: Easy_Fabric_Classic
+
+  nvPairs:
+    # STP — rpvst+ is the standard for Classic LAN
+    STP_ROOT_OPTION: "rpvst+"
+    STP_BRIDGE_PRIORITY: "0"
+
+    # MTU
+    L2_HOST_INTF_MTU: "9216"
+
+    # VRF Lite (for inter-fabric routing if needed later)
+    VRF_LITE_AUTOCONFIG: "Auto"
+    VRF_LITE_PROTOCOL: "ebgp"
+
+    # Misc
+    COPP_POLICY: "strict"
+    ENABLE_NXAPI: "true"
+    ENABLE_NXAPI_HTTP: "true"
+
+# Switch inventory for ndfc_provision_fabrics.py discovery.
+# Management network: PLACEHOLDER — replace with your OOB management subnet
+switches:
+  - name: oob-sw-1
+    serial_number: SERIAL-ADMIN-SW-01     # PLACEHOLDER
+    role: leaf
+    management:
+      default_gateway_v4: 192.0.2.1       # PLACEHOLDER
+      management_ipv4_address: 192.0.2.217 # PLACEHOLDER
+
+  - name: oob-sw-2
+    serial_number: SERIAL-ADMIN-SW-02     # PLACEHOLDER
+    role: leaf
+    management:
+      default_gateway_v4: 192.0.2.1       # PLACEHOLDER
+      management_ipv4_address: 192.0.2.218 # PLACEHOLDER

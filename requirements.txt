@@ -1,0 +1,12 @@
+ansible-core==2.16.19
+ansible-lint
+jmespath
+nac-yaml==1.0.0
+nac-validate==1.0.0
+macaddress
+netaddr
+packaging==24.1
+requests
+nac-test==1.0.0
+# Optional: CML (Cisco Modeling Labs) Python client for lab environments
+# virl2_client

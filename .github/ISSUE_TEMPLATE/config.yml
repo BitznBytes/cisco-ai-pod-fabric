@@ -1,0 +1,9 @@
+---
+blank_issues_enabled: false
+contact_links:
+  - name: NetasCode Site
+    url: https://netascode.cisco.com
+    about: Please review additional information on the NetasCode site.
+  - name: Webex Room
+    url: https://eurl.io/#iDX4lO25E
+    about: Join the "VXLAN Support - Network as Code" Webex room for discussions.

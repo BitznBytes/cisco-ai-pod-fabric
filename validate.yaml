@@ -1,0 +1,12 @@
+---
+# CUSTOMIZE: Validation Playbook
+# This playbook validates YAML configuration files against the VXLAN schema.
+# Update the hosts value to match your fabric host(s) from inventory.yaml
+
+- hosts: ndfc
+  any_errors_fatal: true
+  gather_facts: no
+  serial: 1
+
+  roles:
+    - role: cisco.nac_dc_vxlan.validate

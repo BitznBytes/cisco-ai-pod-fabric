@@ -1,0 +1,43 @@
+---
+# FEN fabric-wide and per-role policies.
+# TCAM regions for ARP suppression are required on all leaf/VTEP switches.
+# Leaves are grouped by function; the vteps group targets all of them.
+vxlan:
+  policy:
+    policies:
+      - name: tcam_arp_suppression
+        template_name: switch_freeform
+        template_vars:
+          CONF: |-
+            hardware access-list tcam region e-racl 512
+            hardware access-list tcam region racl 1024
+            hardware access-list tcam region arp-ether 256
+    groups:
+      - name: vteps
+        policies:
+          - name: tcam_arp_suppression
+    switches:
+      - name: fe-sw-l-01
+        groups:
+          - vteps
+      - name: fe-sw-l-02
+        groups:
+          - vteps
+      - name: fe-sto-sw-l-01
+        groups:
+          - vteps
+      - name: fe-sto-sw-l-02
+        groups:
+          - vteps
+      - name: fe-sky-sw-l-01
+        groups:
+          - vteps
+      - name: fe-sky-sw-l-02
+        groups:
+          - vteps
+      - name: fe-priv-sw-l-01
+        groups:
+          - vteps
+      - name: fe-priv-sw-l-02
+        groups:
+          - vteps

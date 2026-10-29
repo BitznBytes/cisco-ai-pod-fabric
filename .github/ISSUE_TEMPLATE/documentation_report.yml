@@ -1,0 +1,101 @@
+---
+
+name: Documentation Report
+description: Report a documentation issue for the VXLAN as Code
+title: Documentation Report Title
+labels:
+  - documentation
+  - doc
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for creating a documentation issue to help us improve the VXLAN as Code. 
+        Please fill out the sections below to help us understand and reproduce the issue you are facing.
+
+  - type: dropdown
+    id: data-model
+    attributes:
+      label: Which section of the data model is the documentation update related?
+      multiple: false
+      options:
+        - vxlan.fabric
+        - vxlan.global
+        - vxlan.topology
+        - vxlan.underlay
+        - vxlan.overlay
+        - vxlan.overlay_extensions
+        - vxlan.policy
+        - vxlan.multisite
+        - defaults.vxlan
+        - other
+    validations:
+      required: true
+
+  - type: textarea
+    id: new-or-affected-documentation
+    attributes:
+      label: New or Affected Documentation
+      description: Please list the new or affected documentation sections
+      placeholder: Documentation section or new documentation that needs attention
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: documentation-description
+    attributes:
+      label: Documentation Description
+      description: Please leave a helpful description of the documentation report here
+      placeholder: Documentation section or new documentation that needs attention
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: ndfc-version
+    attributes:
+      label: Cisco NDFC Version
+      description: Please provide your Cisco NDFC version used when encountering this issue
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: nxos-version
+    attributes:
+      label: Cisco NX-OS Version
+      description: Please provide your Cisco NX-OS version used when encountering this issue
+      render: shell
+    validations:
+      required: false
+
+  - type: input
+    id: customer-name
+    attributes:
+      label: Associated Customer
+      description: Provide customer name if applicable.
+      placeholder: Customer name
+    validations:
+      required: false
+
+  - type: dropdown
+    id: services-as-code
+    attributes:
+      label: Is this a customer of Services as Code (LCS)?
+      description: Is the issue opened for a customer with paid Services as Code support?
+      options:
+        - "No"
+        - "Yes"
+      default: 0
+    validations:
+      required: true
+
+  - type: input
+    id: customer-pid
+    attributes:
+      label: PID/DID
+      description: Provide Project ID or deal ID to prioritize the issue.
+      placeholder: Project ID or deal ID
+    validations:
+      required: false

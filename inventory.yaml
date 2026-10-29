@@ -1,0 +1,28 @@
+---
+# Ansible Inventory for AI Pod — VXLAN as Code
+# Each host entry maps to a directory in host_vars/ with *.nac.yaml config files.
+# ansible_host points to the Nexus Dashboard (NDFC) controller.
+#
+# FABRIC INVENTORY:
+#   FEN  — Front-End Network (VXLAN EVPN, iBGP, 2 spines + 8 leaves)
+#           Fully managed by the cisco.nac_dc_vxlan collection.
+#
+#   BEN  — NOT here. Back-End GPU/AI fabric (Easy_Fabric_AI template) is provisioned
+#           via scripts/ndfc_provision_fabrics.py — the collection does not support
+#           this template type. Run the script before or independently of vxlan.yaml.
+#
+#   Admin — NOT here. Classic LAN admin fabric (LAN_Classic template) is also
+#           provisioned via scripts/ndfc_provision_fabrics.py.
+#
+# ND_HOST must be IP or hostname only (no https://).
+# Jenkins stores this as a "Secret text" credential, which can include trailing newlines —
+# the trim filter removes them.
+
+all:
+  children:
+    ndfc:
+      hosts:
+        FEN:
+          ansible_host: "{{ (lookup('env', 'ND_HOST') | default('', true) | trim) | default('192.0.2.10', true) }}"
+        GPU:
+          ansible_host: "{{ (lookup('env', 'ND_HOST') | default('', true) | trim) | default('192.0.2.10', true) }}"

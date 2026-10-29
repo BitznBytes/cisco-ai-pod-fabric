@@ -1,0 +1,162 @@
+---
+# Security Groups (Group Policy Option / GPO) deployment playbook.
+#
+# NOTE: This playbook requires Ansible roles from the security/ directory which is
+# NOT included in this public template. The security roles contain Cisco-proprietary
+# content. This file is provided as a reference for the deployment workflow only.
+#
+# Prerequisite: vxlan.yaml must complete successfully before running this.
+# The base fabric must exist in NDFC and all switches must be In-Sync.
+#
+# ── Typical usage ────────────────────────────────────────────────────────────
+#
+# Full run (phases 1-4 in sequence; pauses at reload gate unless --trigger-reload):
+#   ansible-playbook security_groups.yaml
+#
+# With automatic switch reload (use with caution — reloads ALL fabric switches):
+#   ansible-playbook security_groups.yaml -e sgt_trigger_reload=true
+#
+# Skip reload gate (CML/virtual lab environments):
+#   ansible-playbook security_groups.yaml -e sgt_skip_reload=true
+#
+# Dry-run (shows what would be applied without touching NDFC):
+#   ansible-playbook security_groups.yaml -e sgt_dry_run=true
+#
+# ── Phased runs (useful for resuming after a reload) ─────────────────────────
+#
+# Phases 1-3 only (enable SGT flags, push TCAM config, pause for reload):
+#   ansible-playbook security_groups.yaml --tags role_preflight,role_enable_sgt,role_tcam
+#
+# Phases 4+ only (after switches have been reloaded):
+#   ansible-playbook security_groups.yaml --tags role_config,role_deploy
+#
+# ── Variable reference ───────────────────────────────────────────────────────
+#
+#   sgt_dry_run        (bool, default: false) — pass to ndfc_security_groups.py
+#   sgt_trigger_reload (bool, default: false) — auto-reload switches after TCAM
+#   sgt_skip_reload    (bool, default: false) — skip reload gate entirely
+#   sgt_fabric         (string, optional)     — target a single child fabric only
+#   sgt_phase          (string, default: all) — preflight | tcam | config | all
+#                                               (applies only to the script call)
+
+- name: Security Groups (GPO) — Preflight and Fabric SGT Enable
+  hosts: ndfc
+  gather_facts: no
+  any_errors_fatal: true
+  serial: 1
+
+  vars:
+    sgt_dry_run: false
+    sgt_trigger_reload: false
+    sgt_skip_reload: false
+    sgt_fabric: ""
+    _script: "{{ playbook_dir }}/scripts/ndfc_security_groups.py"
+    _fabric_ext_script: "{{ playbook_dir }}/scripts/ndfc_apply_fabric_ext.py"
+    _host_vars: "{{ playbook_dir }}/host_vars"
+    _dry_flag: "{{ '--dry-run' if sgt_dry_run | bool else '' }}"
+    _fabric_flag: "{{ '--fabric ' + sgt_fabric if sgt_fabric else '' }}"
+
+  tasks:
+
+    # ── Phase 1: pre-flight ──────────────────────────────────────────────────
+    - name: "SGT | Run pre-flight validation"
+      ansible.builtin.command:
+        cmd: >
+          python3 {{ _script }}
+          --phase preflight
+          --model {{ playbook_dir }}/security/security_groups.sgt.yaml
+          --host-vars {{ _host_vars }}
+          {{ _dry_flag }}
+          {{ _fabric_flag }}
+        chdir: "{{ playbook_dir }}"
+      delegate_to: localhost
+      run_once: true
+      tags: [role_preflight, role_enable_sgt, role_tcam, role_config, role_deploy]
+
+    # ── Phase 2: enable SGT flags on all fabrics via fabric_ext ─────────────
+    # ndfc_apply_fabric_ext.py reads host_vars/<fabric>/fabric_ext.nac.yaml
+    # and PUTs the nvPairs (including ENABLE_SGT) to NDFC.
+    # MSD1 gets ENABLE_SGT: "on"; child fabrics get ENABLE_SGT: "true".
+    - name: "SGT | Enable SGT flags on MSD + child fabrics (fabric_ext)"
+      ansible.builtin.command:
+        cmd: >
+          python3 {{ _fabric_ext_script }}
+          --host-vars {{ _host_vars }}
+          {{ _dry_flag }}
+          {{ ('--fabric ' + inventory_hostname) if inventory_hostname != 'MSD1' else '' }}
+        chdir: "{{ playbook_dir }}"
+      delegate_to: localhost
+      tags: [role_enable_sgt]
+
+    # ── Phase 3: TCAM + reload ───────────────────────────────────────────────
+    # Runs only once (not per-fabric — script fans out to all child fabrics).
+    - name: "SGT | Push TCAM allocation policies and handle reload gate"
+      ansible.builtin.command:
+        cmd: >
+          python3 {{ _script }}
+          --phase tcam
+          --model {{ playbook_dir }}/security/security_groups.sgt.yaml
+          --host-vars {{ _host_vars }}
+          {{ _dry_flag }}
+          {{ _fabric_flag }}
+          {{ '--trigger-reload' if sgt_trigger_reload | bool else '' }}
+          {{ '--skip-reload' if sgt_skip_reload | bool else '' }}
+        chdir: "{{ playbook_dir }}"
+      delegate_to: localhost
+      run_once: true
+      tags: [role_tcam]
+      # NOTE: When --trigger-reload is NOT set and requires_reload: true in the
+      # data model, the script exits 0 after printing reload instructions and
+      # this task completes. The play stops here — resume with:
+      #   ansible-playbook security_groups.yaml --tags role_config,role_deploy
+
+    # ── Phase 4: security group feature + NX-OS config ──────────────────────
+    # Pushes feature group-based policy, ACLs, role-based permissions,
+    # VRF enforcement, and route injection as freeform NDFC switch policies.
+    - name: "SGT | Push security group feature and NX-OS config"
+      ansible.builtin.command:
+        cmd: >
+          python3 {{ _script }}
+          --phase config
+          --model {{ playbook_dir }}/security/security_groups.sgt.yaml
+          --host-vars {{ _host_vars }}
+          {{ _dry_flag }}
+          {{ _fabric_flag }}
+        chdir: "{{ playbook_dir }}"
+      delegate_to: localhost
+      run_once: true
+      tags: [role_config]
+
+    # ── Phase 5: final config-deploy ─────────────────────────────────────────
+    # The script already calls config-save + config-deploy per fabric during
+    # the config phase. This explicit task provides a tag-addressable deploy
+    # step in case you need to re-deploy without re-pushing policy content.
+    - name: "SGT | Final config-save + config-deploy (per fabric)"
+      cisco.dcnm.dcnm_rest:
+        method: POST
+        path: "/appcenter/cisco/ndfc/api/v1/lan-fabric/rest/control/fabrics/{{ inventory_hostname }}/config-save"
+      when:
+        - inventory_hostname in ['MSD1', 'Site1', 'Site2', 'Site3', 'Remote_Sites']
+        - not (sgt_dry_run | bool)
+      tags: [role_deploy]
+
+    - name: "SGT | Verify SGT_OPER_STATUS on all child fabrics"
+      cisco.dcnm.dcnm_rest:
+        method: GET
+        path: "/appcenter/cisco/ndfc/api/v1/lan-fabric/rest/control/fabrics/{{ inventory_hostname }}"
+      register: fabric_state
+      when:
+        - inventory_hostname in ['Site1', 'Site2', 'Site3', 'Remote_Sites']
+        - not (sgt_dry_run | bool)
+      tags: [role_deploy]
+
+    - name: "SGT | Report SGT operational status"
+      ansible.builtin.debug:
+        msg: >
+          {{ inventory_hostname }}: SGT_OPER_STATUS =
+          {{ fabric_state.DATA.nvPairs.SGT_OPER_STATUS | default('(not available)') }}
+      when:
+        - inventory_hostname in ['Site1', 'Site2', 'Site3', 'Remote_Sites']
+        - fabric_state is defined
+        - not (sgt_dry_run | bool)
+      tags: [role_deploy]

@@ -1,0 +1,23 @@
+---
+# FEN extended fabric settings not exposed by the cisco.nac_dc_vxlan collection.
+# Applied via scripts/ndfc_apply_fabric_ext.py using the NDFC REST API.
+# Keys are NDFC fabric template nvPairs names (exact, case-sensitive).
+# Discover all available keys:
+#   GET /appcenter/cisco/ndfc/api/v1/lan-fabric/rest/control/fabrics/FEN
+
+vxlan:
+  fabric:
+    name: FEN
+    type: VXLAN_EVPN
+
+  fabric_extended:
+    nvPairs:
+      CDP_ENABLE: "true"
+      ENABLE_NGOAM: "true"
+
+      # Storage/NFS optimization - uncomment and add freeform config once VLANs are defined:
+      # EXTRA_CONF_LEAF: |
+      #   ntp server 192.0.2.1 use-vrf management
+
+      # Uncomment to enable Security Group Tags (SGT/GPO) on the fabric:
+      # ENABLE_SGT: "true"

@@ -1,0 +1,33 @@
+---
+# CUSTOMIZE: Connection Parameters for NDFC (Nexus Dashboard Fabric Controller)
+# These settings configure Ansible to communicate with NDFC via HTTPS API.
+# Credentials are loaded from environment variables set by Jenkins pipeline.
+
+# Connection settings - typically no changes needed
+ansible_connection: ansible.netcommon.httpapi
+ansible_network_os: cisco.dcnm.dcnm
+ansible_httpapi_port: 443
+ansible_httpapi_use_ssl: true
+ansible_httpapi_validate_certs: false
+
+# Login domain for Nexus Dashboard API (e.g. local, or your LDAP domain). Set ND_DOMAIN in the environment.
+# default(..., true): env lookup returns "" when unset; plain default() does not replace ""
+ansible_httpapi_login_domain: "{{ (lookup('env', 'ND_DOMAIN') | default('', true) | trim) | default('local', true) }}"
+
+# Hostname used in https:// URLs for ND login/version checks (SNI + cert must match what you use in the browser).
+# If inventory ansible_host is an IP but you browse https://ndfc.example.com/, set: export ND_FQDN=ndfc.example.com
+nac_nd_api_hostname: "{{ (lookup('env', 'ND_FQDN') | default('', true) | trim) | default(ansible_host, true) }}"
+
+# NDFC Controller API Credentials
+# These use ND_ prefix environment variables set by Jenkins
+# CUSTOMIZE: Update the environment variable names if your Jenkins uses different credential IDs
+# default(..., true): env lookup returns "" when unset; plain default() does not replace ""
+# trim: Jenkins "Secret text" credentials often include a trailing newline
+ansible_user: "{{ (lookup('env', 'ND_USERNAME') | default('', true) | trim) | default('admin', true) }}"
+ansible_password: "{{ (lookup('env', 'ND_PASSWORD') | default('', true) | trim) | default('admin', true) }}"
+
+# Credentials for managed switches in NDFC inventory
+# These are used when NDFC needs to configure switches
+# CUSTOMIZE: Update the environment variable names if your Jenkins uses different credential IDs
+ndfc_switch_username: "{{ (lookup('env', 'NDFC_SW_USERNAME') | default('', true) | trim) | default('admin', true) }}"
+ndfc_switch_password: "{{ (lookup('env', 'NDFC_SW_PASSWORD') | default('', true) | trim) | default('admin', true) }}"

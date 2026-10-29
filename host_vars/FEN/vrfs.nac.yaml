@@ -1,0 +1,31 @@
+---
+# FEN VRF definitions
+# VRF-to-switch attachment follows the leaf functional groups:
+#   Compute leaves  (fe-sw-l-01/02)      — management + user-facing traffic
+#   Storage leaves  (fe-sto-sw-l-01/02)  — NFS/VAST storage traffic
+#   Sky leaves      (fe-sky-sw-l-01/02)  — InfiniBand gateway traffic (TBD)
+#   Private leaves  (fe-priv-sw-l-01/02) — TBD, treat as compute for now
+vxlan:
+  overlay:
+    vrfs:
+      - name: FEN-MGMT
+        vrf_id: 50000
+        vlan_id: 2000          # VRF SVI VLAN (from NDFC VRF VLAN range 2000-2299)
+        vrf_int_mtu: 9216
+
+    vrf_attach_groups:
+      - name: fen-compute-leaves
+        vrfs:
+          - name: FEN-MGMT
+        switches:
+          - name: fe-sw-l-01
+          - name: fe-sw-l-02
+          - name: fe-priv-sw-l-01
+          - name: fe-priv-sw-l-02
+
+      - name: fen-storage-leaves
+        vrfs:
+          - name: FEN-MGMT
+        switches:
+          - name: fe-sto-sw-l-01
+          - name: fe-sto-sw-l-02
